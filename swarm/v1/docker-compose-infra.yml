@@ -1,0 +1,82 @@
+# docker挖的坑
+# docker stack deploy不解析env_file
+# https://github.com/moby/moby/issues/29133#issuecomment-285980447
+# 执行 docker stack deploy之前可先执行 export $(cat .env)
+# 注意.env文件使用dos2unix转换下,防止包含win特殊字符
+# 注意 compose文件也需要dos2unix，避免遇到蛋疼的问题
+#
+# # cat .env 
+# IMAGE_VER=1.0.1-SNAPSHOT
+# SPRING_PROFILES_ACTIVE=intg
+# # export $(cat .env)
+# # echo ${IMAGE_VER};echo ${SPRING_PROFILES_ACTIVE}
+
+version: '3'
+services:
+  eureka-server:
+    image: io.mysnippet/eureka-server:${IMAGE_VER}
+    networks:
+       - overlay
+    deploy:
+      placement:
+        constraints: [node.labels.type == cloud-cook]
+      resources:
+        limits:
+          memory: 999M
+    #优先使用compose中的entrypoint,而非Dockerfile
+    entrypoint:
+      - sh
+      - /cloud-assy-entrypoint.sh
+      - /eureka-server.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+    ports:
+      - 7777:7777
+  config-server:
+    image: io.mysnippet/config-server:${IMAGE_VER}
+    networks:
+       - overlay
+    deploy:
+      placement:
+        constraints: [node.labels.type == cloud-cook]
+      resources:
+        limits:
+          memory: 999M
+    depends_on:
+      - eureka-server
+    entrypoint:
+      - ./wait-for-it.sh
+      - eureka-server:7777
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /config-server.jar
+      - --spring.profiles.active=native
+    ports:
+      - 7766:7766
+  gateway-service:
+    image: io.mysnippet/gateway-service:${IMAGE_VER}
+    networks:
+       - overlay
+    deploy:
+      placement:
+        constraints: [node.labels.type == cloud-cook]
+      resources:
+        limits:
+          memory: 1024M
+    depends_on:
+      - eureka-server
+      - config-server
+    entrypoint:
+      - ./wait-for-it.sh
+      - config-server:7766
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /gateway-service.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+    ports:
+      - 7000:7000
+networks:
+  overlay:

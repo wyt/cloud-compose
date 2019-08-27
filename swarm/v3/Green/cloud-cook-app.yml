@@ -1,0 +1,56 @@
+version: '3'
+services:
+  app-sample-consume:
+    image: io.mysnippet/app-sample-consume:${IMAGE_VER}
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        constraints:
+          - node.labels.region == Green
+    depends_on:
+      - eureka-server
+      - config-server
+    ports:
+      - 9002:9002
+    environment:
+      - FILEBEAT_OP_LS_HOSTS=${FILEBEAT_OP_LS_HOSTS}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    entrypoint:
+      - ./wait-for-it.sh
+      - config-server:7766
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /app-sample-consume.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+  app-sample-produce:
+    image: io.mysnippet/app-sample-produce:${IMAGE_VER}
+    deploy:
+      placement:
+        constraints:
+          - node.labels.region == Green
+    depends_on:
+      - eureka-server
+      - config-server
+    ports:
+      - 9003:9003
+    environment:
+      - FILEBEAT_OP_LS_HOSTS=${FILEBEAT_OP_LS_HOSTS}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    entrypoint:
+      - ./wait-for-it.sh
+      - config-server:7766
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /app-sample-produce.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+    volumes:
+      - /apps/cloud-cook/.host_env:/.host_env
+networks:
+  default:
+    external:
+      name: cloud-cook-overlay

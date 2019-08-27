@@ -1,0 +1,52 @@
+version: '3'
+services:
+  app-sample-consume:
+    image: io.mysnippet/app-sample-consume:${IMAGE_VER}
+    networks:
+       - overlay
+    deploy:
+      placement:
+        constraints: [node.labels.type == cloud-cook]
+      resources:
+        limits:
+          memory: 999M
+    depends_on:
+      - eureka-server
+      - config-server
+    ports:
+      - 9002:9002
+    entrypoint:
+      - ./wait-for-it.sh
+      - config-server:7766
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /app-sample-consume.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+  app-sample-produce:
+    image: io.mysnippet/app-sample-produce:${IMAGE_VER}
+    networks:
+       - overlay
+    deploy:
+      placement:
+        constraints: [node.labels.type == cloud-cook]
+      resources:
+        limits:
+          memory: 999M
+    depends_on:
+      - eureka-server
+      - config-server
+    ports:
+      - 9003:9003
+    entrypoint:
+      - ./wait-for-it.sh
+      - config-server:7766
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /app-sample-produce.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+networks:
+  overlay:

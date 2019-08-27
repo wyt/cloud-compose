@@ -1,0 +1,60 @@
+# 需要事先创建网络 docker network create cloud-cook
+# docker network ls
+
+version: '3'
+services:
+  eureka-server:
+    image: io.mysnippet/eureka-server:${IMAGE_VER}
+    deploy:
+      resources:
+        limits:
+          memory: 999M
+    ports:
+      - 7777:7777
+    env_file: .env
+  config-server:
+    image: io.mysnippet/config-server:${IMAGE_VER}
+    deploy:
+      resources:
+        limits:
+          memory: 999M
+    depends_on:
+      - eureka-server
+    env_file: .env
+    entrypoint:
+      - ./wait-for-it.sh
+      - eureka-server:7777
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /config-server.jar
+      - --spring.profiles.active=native
+    ports:
+      - 7766:7766
+  gateway-service:
+    image: io.mysnippet/gateway-service:${IMAGE_VER}
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    depends_on:
+      - eureka-server
+      - config-server
+    env_file: .env
+    entrypoint:
+      - ./wait-for-it.sh
+      - config-server:7766
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /gateway-service.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+    ports:
+      - 7000:7000
+# 使用已存在的网络，事先建立好的
+networks:
+  default:
+    external:
+      name: cloud-cook

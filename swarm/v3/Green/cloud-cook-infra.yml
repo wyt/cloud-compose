@@ -1,0 +1,88 @@
+version: '3'
+services:
+  eureka-server:
+    image: io.mysnippet/eureka-server:${INFRA_IMAGE_VER}
+    deploy:
+      placement:
+        constraints: [node.labels.name == docker_005]
+    environment:
+      - FILEBEAT_OP_LS_HOSTS=${FILEBEAT_OP_LS_HOSTS}
+      - REGISTER_WITH_EUREKA=true
+      - FETCH_REGISTRY=true
+      - SERVER_PORT=7777
+      - SPRING_APPLICATION_NAME=eureka-server
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    entrypoint:
+      - ./cloud-assy-entrypoint.sh
+      - /eureka-server.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+    ports:
+      - 7777:7777
+  eureka-server-2:
+    image: io.mysnippet/eureka-server:${INFRA_IMAGE_VER}
+    deploy:
+      placement:
+        constraints: [node.labels.name == docker_007]
+    environment:
+      - FILEBEAT_OP_LS_HOSTS=${FILEBEAT_OP_LS_HOSTS}
+      - REGISTER_WITH_EUREKA=true
+      - FETCH_REGISTRY=true
+      - SERVER_PORT=7778
+      - SPRING_APPLICATION_NAME=eureka-server-2
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    entrypoint:
+      - ./cloud-assy-entrypoint.sh
+      - /eureka-server.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+    ports:
+      - 7778:7778
+  config-server:
+    image: io.mysnippet/config-server:${INFRA_IMAGE_VER}
+    deploy:
+      placement:
+        constraints: [node.labels.name == docker_005]
+    depends_on:
+      - eureka-server
+    environment:
+      - FILEBEAT_OP_LS_HOSTS=${FILEBEAT_OP_LS_HOSTS}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    entrypoint:
+      - ./wait-for-it.sh
+      - eureka-server:7777
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /config-server.jar
+      - --spring.profiles.active=native
+    ports:
+      - 7766:7766
+  gateway-service:
+    image: io.mysnippet/gateway-service:${INFRA_IMAGE_VER}
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        constraints:
+          - node.labels.region == Green
+    depends_on:
+      - eureka-server
+      - config-server
+    environment:
+      - FILEBEAT_OP_LS_HOSTS=${FILEBEAT_OP_LS_HOSTS}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    entrypoint:
+      - ./wait-for-it.sh
+      - config-server:7766
+      - --timeout=0
+      - --strict
+      - --
+      - /cloud-assy-entrypoint.sh
+      - /gateway-service.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+    ports:
+      - 7000:7000
+networks:
+  default:
+    external:
+      name: cloud-cook-overlay
