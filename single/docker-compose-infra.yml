@@ -5,19 +5,11 @@ version: '3'
 services:
   eureka-server:
     image: io.mysnippet/eureka-server:${IMAGE_VER}
-    deploy:
-      resources:
-        limits:
-          memory: 999M
     ports:
       - 7777:7777
     env_file: .env
   config-server:
     image: io.mysnippet/config-server:${IMAGE_VER}
-    deploy:
-      resources:
-        limits:
-          memory: 999M
     depends_on:
       - eureka-server
     env_file: .env
@@ -34,10 +26,6 @@ services:
       - 7766:7766
   gateway-service:
     image: io.mysnippet/gateway-service:${IMAGE_VER}
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
     depends_on:
       - eureka-server
       - config-server
