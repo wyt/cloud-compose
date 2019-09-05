@@ -8,6 +8,10 @@ services:
     ports:
       - 7777:7777
     env_file: .env
+    entrypoint:
+      - ./cloud-assy-entrypoint.sh
+      - /eureka-server.jar
+      - --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
   config-server:
     image: mysnippet/config-server:${IMAGE_VER}
     depends_on:
