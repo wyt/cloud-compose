@@ -1,7 +1,7 @@
 version: '3'
 services:
   eureka-server:
-    image: io.mysnippet/eureka-server:${INFRA_IMAGE_VER}
+    image: mysnippet/eureka-server:${INFRA_IMAGE_VER}
     deploy:
       placement:
         constraints: [node.labels.name == docker_005]
@@ -19,7 +19,7 @@ services:
     ports:
       - 7777:7777
   eureka-server-2:
-    image: io.mysnippet/eureka-server:${INFRA_IMAGE_VER}
+    image: mysnippet/eureka-server:${INFRA_IMAGE_VER}
     deploy:
       placement:
         constraints: [node.labels.name == docker_007]
@@ -37,7 +37,7 @@ services:
     ports:
       - 7778:7778
   config-server:
-    image: io.mysnippet/config-server:${INFRA_IMAGE_VER}
+    image: mysnippet/config-server:${INFRA_IMAGE_VER}
     deploy:
       placement:
         constraints: [node.labels.name == docker_005]
@@ -58,7 +58,7 @@ services:
     ports:
       - 7766:7766
   gateway-service:
-    image: io.mysnippet/gateway-service:${INFRA_IMAGE_VER}
+    image: mysnippet/gateway-service:${INFRA_IMAGE_VER}
     deploy:
       mode: replicated
       replicas: 2

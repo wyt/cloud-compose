@@ -14,7 +14,7 @@
 version: '3'
 services:
   eureka-server:
-    image: io.mysnippet/eureka-server:${IMAGE_VER}
+    image: mysnippet/eureka-server:${IMAGE_VER}
     networks:
        - overlay
     deploy:
@@ -32,7 +32,7 @@ services:
     ports:
       - 7777:7777
   config-server:
-    image: io.mysnippet/config-server:${IMAGE_VER}
+    image: mysnippet/config-server:${IMAGE_VER}
     networks:
        - overlay
     deploy:
@@ -55,7 +55,7 @@ services:
     ports:
       - 7766:7766
   gateway-service:
-    image: io.mysnippet/gateway-service:${IMAGE_VER}
+    image: mysnippet/gateway-service:${IMAGE_VER}
     networks:
        - overlay
     deploy:
